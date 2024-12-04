@@ -14,6 +14,7 @@
 # limitations under the License.
 
 
+import logging
 import os
 from typing import Any, Literal, Sequence
 
@@ -40,7 +41,6 @@ class PredictionWriter(BasePredictionWriter, pl.Callback):
         """
         super().__init__(write_interval)
         self.output_dir = str(output_dir)
-        os.makedirs(self.output_dir, exist_ok=True)
 
     def write_on_batch_end(
         self,
@@ -70,6 +70,7 @@ class PredictionWriter(BasePredictionWriter, pl.Callback):
         # batch_indices is not captured due to a lightning bug when return_predictions = False
         # we use input IDs in the prediction to map the result to input
         torch.save(prediction, result_path)
+        logging.info(f"Inference predictions are stored in {result_path}\n{prediction.keys()}")
 
     def write_on_epoch_end(
         self,
@@ -90,10 +91,10 @@ class PredictionWriter(BasePredictionWriter, pl.Callback):
         # the predictions of it's respective rank
         result_path = os.path.join(self.output_dir, f"predictions__rank_{trainer.global_rank}.pt")
 
+        # collate multiple batches / ignore empty ones
+        prediction = batch_collator([item for item in predictions if item is not None])
+
         # batch_indices is not captured due to a lightning bug when return_predictions = False
         # we use input IDs in the prediction to map the result to input
-        torch.save(
-            # collate multiple batches / ignore empty ones
-            batch_collator([item for item in predictions if item is not None]),
-            result_path,
-        )
+        torch.save(prediction, result_path)
+        logging.info(f"Inference predictions are stored in {result_path}\n{prediction.keys()}")
