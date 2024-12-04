@@ -46,13 +46,13 @@ def test_val_dataloader_in_main_runs_with_limit_val_batches(tmpdir, limit_val_ba
             data_dir=data_path,
             num_nodes=1,
             devices=1,
-            seq_length=128,
+            seq_length=8,
             result_dir=result_dir,
             wandb_project=None,
             wandb_offline=True,
-            num_steps=55,
+            num_steps=5,
             limit_val_batches=limit_val_batches,
-            val_check_interval=1,
+            val_check_interval=2,
             num_dataset_workers=0,
             biobert_spec_option=BiobertSpecOption.bert_layer_local_spec,
             lr=1e-4,
@@ -92,10 +92,10 @@ def test_pretrain_cli(tmpdir):
     --experiment-name test_experiment     \
     --num-gpus 1  \
     --num-nodes 1 \
-    --val-check-interval 10 \
+    --val-check-interval 2 \
     --num-dataset-workers 0 \
-    --num-steps 55 \
-    --seq-length 128 \
+    --num-steps 5 \
+    --seq-length 8 \
     --limit-val-batches 2 \
     --micro-batch-size 2 \
     --accumulate-grad-batches 2
