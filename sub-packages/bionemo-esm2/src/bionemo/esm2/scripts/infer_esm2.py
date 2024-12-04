@@ -18,7 +18,6 @@ import os
 from pathlib import Path
 from typing import Dict, Sequence, Type, get_args
 
-import torch
 from nemo import lightning as nl
 
 from bionemo.core.utils.dtypes import PrecisionTypes, get_autocast_dtype
@@ -27,7 +26,6 @@ from bionemo.esm2.data.tokenizer import get_tokenizer
 from bionemo.esm2.model.finetune.datamodule import ESM2FineTuneDataModule, InMemoryCSVDataset
 from bionemo.esm2.model.finetune.finetune_regressor import ESM2FineTuneSeqConfig
 from bionemo.esm2.model.finetune.finetune_token_classifier import ESM2FineTuneTokenConfig
-from bionemo.llm.lightning import batch_collator
 from bionemo.llm.model.biobert.lightning import biobert_lightning_module
 from bionemo.llm.model.biobert.model import BioBertConfig
 from bionemo.llm.utils.callbacks import IntervalT, PredictionWriter
@@ -82,11 +80,8 @@ def infer_model(
         prediction_interval (IntervalT, optional): Intervals to write predict method output into disck for DDP inference. Defaults to epoch.
         config_class (Type[BioBertConfig]): The config class for configuring the model using checkpoint provided
     """
-    if os.path.isdir(results_path):
-        results_path = results_path / "esm2_inference_results.pt"
-    else:
-        _, extension = os.path.splitext(results_path)
-        results_path = results_path if extension == ".pt" else results_path / ".pt"
+    # create the directory to save the inference results
+    os.makedirs(results_path, exist_ok=True)
 
     # Setup the strategy and trainer
     global_batch_size = infer_global_batch_size(
@@ -104,19 +99,14 @@ def infer_model(
         find_unused_parameters=True,
     )
 
-    callbacks = []
-    if devices > 1:
-        prediction_writer = PredictionWriter(
-            output_dir=os.path.dirname(results_path), write_interval=prediction_interval
-        )
-        callbacks.append(prediction_writer)
+    prediction_writer = PredictionWriter(output_dir=results_path, write_interval=prediction_interval)
 
     trainer = nl.Trainer(
         accelerator="gpu",
         devices=devices,
         strategy=strategy,
         num_nodes=num_nodes,
-        callbacks=callbacks,
+        callbacks=[prediction_writer],
         plugins=nl.MegatronMixedPrecision(precision=precision),
     )
 
@@ -145,13 +135,7 @@ def infer_model(
     tokenizer = get_tokenizer()
     module = biobert_lightning_module(config=config, tokenizer=tokenizer)
 
-    if devices > 1:
-        trainer.predict(module, datamodule=datamodule)  # return_predictions=False lightning bug
-    else:
-        predictions = batch_collator(trainer.predict(module, datamodule=datamodule, return_predictions=True))
-        non_none_keys = [key for key, val in predictions.items() if val is not None]
-        print(f"Writing output {str(non_none_keys)} into {results_path}")
-        torch.save(predictions, results_path)
+    trainer.predict(module, datamodule=datamodule)  # return_predictions=False failing due to a lightning bug
 
 
 def infer_esm2_entrypoint():
@@ -193,7 +177,7 @@ def get_parser():
         required=True,
         help="Path to the CSV file containing sequences and label columns",
     )
-    parser.add_argument("--results-path", type=Path, required=True, help="Path to the results file.")
+    parser.add_argument("--results-path", type=Path, required=True, help="Path to the results directory.")
 
     parser.add_argument(
         "--precision",
