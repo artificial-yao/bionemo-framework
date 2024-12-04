@@ -416,7 +416,7 @@ class SingleCellMemMapDataset(SingleCellRowDataset):
 
     def _load_mmap_file_if_exists(self, file_path, dtype):
         if os.path.exists(file_path):
-            return np.memmap(file_path, dtype=dtype, mode=self.mode)
+            return np.memmap(file_path, dtype=dtype, mode=Mode.READ.value)
         else:
             raise FileNotFoundError(f"The mmap file at {file_path} is missing")
 
@@ -437,7 +437,7 @@ class SingleCellMemMapDataset(SingleCellRowDataset):
                                     with  SingleCellMemMapDataset(<path to data that will be created>, h5ad_path=<path to h5ad file>"""
             )
         self.data_path = stored_path
-        self.mode = Mode.READ_APPEND
+        self.mode = Mode.READ
 
         # Metadata is required, so we must check if it exists and fail if not.
         if not os.path.exists(f"{self.data_path}/{FileNames.METADATA.value}"):
@@ -445,7 +445,7 @@ class SingleCellMemMapDataset(SingleCellRowDataset):
                 f"Error: the metadata file {self.data_path}/{FileNames.METADATA.value} does not exist."
             )
 
-        with open(f"{self.data_path}/{FileNames.METADATA.value}", Mode.READ_APPEND.value) as mfi:
+        with open(f"{self.data_path}/{FileNames.METADATA.value}", self.mode.value) as mfi:
             self.metadata = json.load(mfi)
 
         if os.path.exists(f"{self.data_path}/{FileNames.FEATURES.value}"):
@@ -465,6 +465,9 @@ class SingleCellMemMapDataset(SingleCellRowDataset):
         self.col_index = self._load_mmap_file_if_exists(
             f"{self.data_path}/{FileNames.COLPTR.value}", dtype=self.dtypes[f"{FileNames.COLPTR.value}"]
         )
+        print(self.data.shape)
+        print(self.row_index.shape)
+        print(self.col_index.shape)
 
     def _write_metadata(self) -> None:
         with open(f"{self.data_path}/{FileNames.METADATA.value}", f"{Mode.CREATE.value}") as mfi:
@@ -573,7 +576,7 @@ class SingleCellMemMapDataset(SingleCellRowDataset):
                 n_elements += len(data_block)
 
         # The column and data files are re-opened as memory-mapped arrays with the final shape
-        mode = Mode.READ_APPEND
+        mode = Mode.READ
         self.col_index = np.memmap(
             f"{memmap_dir_path}/{FileNames.COLPTR.value}",
             self.dtypes[f"{FileNames.COLPTR.value}"],

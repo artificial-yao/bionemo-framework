@@ -137,7 +137,6 @@ class RowFeatureIndex:
 
         # Retrieve the features for the identified value.
         features_dict = self._feature_arr[d_id]
-
         # If specific features are to be selected, filter the features.
         if select_features is not None:
             features = []
