@@ -48,6 +48,11 @@ def sample_predictions():
     return [{"temp": torch.tensor([1, 2, 3])}, {"temp": torch.tensor([4, 5, 6])}, None]
 
 
+@pytest.fixture
+def collated_prediction(sample_predictions):
+    return batch_collator([item for item in sample_predictions if item is not None])
+
+
 @pytest.mark.parametrize("write_interval", ["batch", "epoch"])
 def test_prediction_writer_init(temp_dir, write_interval):
     writer = PredictionWriter(output_dir=temp_dir, write_interval=write_interval)
@@ -59,14 +64,14 @@ def test_prediction_writer_init(temp_dir, write_interval):
 
 
 @patch("torch.save")
-def test_write_on_batch_end(mock_torch_save, temp_dir, mock_trainer, mock_module, sample_predictions):
+def test_write_on_batch_end(mock_torch_save, temp_dir, mock_trainer, mock_module, collated_prediction):
     writer = PredictionWriter(output_dir=temp_dir, write_interval="batch")
 
     batch_idx = 1
     writer.write_on_batch_end(
         trainer=mock_trainer,
         pl_module=mock_module,
-        prediction=sample_predictions,
+        prediction=collated_prediction,
         batch_indices=[],
         batch=None,
         batch_idx=batch_idx,
@@ -74,11 +79,13 @@ def test_write_on_batch_end(mock_torch_save, temp_dir, mock_trainer, mock_module
     )
 
     expected_path = os.path.join(temp_dir, f"predictions__rank_{mock_trainer.global_rank}__batch_{batch_idx}.pt")
-    mock_torch_save.assert_called_once_with(sample_predictions, expected_path)
+    mock_torch_save.assert_called_once_with(collated_prediction, expected_path)
 
 
 @patch("torch.save")
-def test_write_on_epoch_end(mock_torch_save, temp_dir, mock_trainer, mock_module, sample_predictions):
+def test_write_on_epoch_end(
+    mock_torch_save, temp_dir, mock_trainer, mock_module, sample_predictions, collated_prediction
+):
     writer = PredictionWriter(output_dir=temp_dir, write_interval="epoch")
 
     writer.write_on_epoch_end(
@@ -89,7 +96,6 @@ def test_write_on_epoch_end(mock_torch_save, temp_dir, mock_trainer, mock_module
     )
 
     expected_path = os.path.join(temp_dir, f"predictions__rank_{mock_trainer.global_rank}.pt")
-    expected_prediction = batch_collator([item for item in sample_predictions if item is not None])
 
     mock_torch_save.assert_called_once()  # Ensure it's called exactly once
 
@@ -101,4 +107,4 @@ def test_write_on_epoch_end(mock_torch_save, temp_dir, mock_trainer, mock_module
     # Compare tensors manually
     assert isinstance(prediction, dict)
     for key in prediction:
-        assert torch.equal(prediction[key], expected_prediction[key]), "Tensors do not match"
+        assert torch.equal(prediction[key], collated_prediction[key]), "Tensors do not match"
