@@ -18,7 +18,7 @@ import logging
 import os
 from typing import Any, Literal, Sequence
 
-import pytorch_lightning as pl
+import lightning.pytorch as pl
 import torch
 from lightning.pytorch.callbacks import BasePredictionWriter
 
