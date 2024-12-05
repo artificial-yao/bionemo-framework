@@ -38,6 +38,7 @@ script: |-
     --val-check-interval=1000 \
     --limit-val-batches=1 \
     --num-steps=${max_steps} \
+    --scheduler-num-steps=500000 \
     --min-seq-length=1024 \
     --max-seq-length=1024 \
     --num-layers=33 \
@@ -51,4 +52,4 @@ script: |-
     --wandb-group=${model}_${variant}_${config_name} \
     --wandb-job-type=${pipeline_label} \
     --log-every-n-steps=50 \
-    --no-save-best-checkpoint --no-save-last-checkpoint;
+    --no-create-checkpoint-callback;
