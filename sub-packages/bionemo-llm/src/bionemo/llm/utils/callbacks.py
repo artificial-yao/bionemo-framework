@@ -35,8 +35,8 @@ class PredictionWriter(BasePredictionWriter, pl.Callback):
         """Initializes the callback.
 
         Args:
-            output_dir (str): The directory where predictions will be written.
-            write_interval (str): The interval at which predictions will be written. (batch, epoch)
+            output_dir: The directory where predictions will be written.
+            write_interval: The interval at which predictions will be written. (batch, epoch)
 
         """
         super().__init__(write_interval)
@@ -55,13 +55,13 @@ class PredictionWriter(BasePredictionWriter, pl.Callback):
         """Writes predictions to disk at the end of each batch.
 
         Args:
-            trainer (pl.Trainer): The Trainer instance.
-            pl_module (pl.LightningModule): The LightningModule instance.
-            prediction (Any): The prediction made by the model.
-            batch_indices (Sequence[int]): The indices of the batch.
-            batch (Any): The batch data.
-            batch_idx (int): The index of the batch.
-            dataloader_idx (int): The index of the dataloader.
+            trainer: The Trainer instance.
+            pl_module: The LightningModule instance.
+            prediction: The prediction made by the model.
+            batch_indices: The indices of the batch.
+            batch: The batch data.
+            batch_idx: The index of the batch.
+            dataloader_idx: The index of the dataloader.
         """
         # this will create N (num processes) files in `output_dir` each containing
         # the predictions of it's respective rank
@@ -82,10 +82,10 @@ class PredictionWriter(BasePredictionWriter, pl.Callback):
         """Writes predictions to disk at the end of each epoch.
 
         Args:
-            trainer (pl.Trainer): The Trainer instance.
-            pl_module (pl.LightningModule): The LightningModule instance.
-            predictions (Any): The predictions made by the model.
-            batch_indices (Sequence[int]): The indices of the batch.
+            trainer: The Trainer instance.
+            pl_module: The LightningModule instance.
+            predictions: The predictions made by the model.
+            batch_indices: The indices of the batch.
         """
         # this will create N (num processes) files in `output_dir` each containing
         # the predictions of it's respective rank

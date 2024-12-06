@@ -135,6 +135,8 @@ def infer_model(
     tokenizer = get_tokenizer()
     module = biobert_lightning_module(config=config, tokenizer=tokenizer)
 
+    # datamodule is responsible for transforming dataloaders by adding MegatronDataSampler. Alternatively, to
+    # directly use dataloader in predict method, the data sampler should be included in MegatronStrategy
     trainer.predict(module, datamodule=datamodule)  # return_predictions=False failing due to a lightning bug
 
 
