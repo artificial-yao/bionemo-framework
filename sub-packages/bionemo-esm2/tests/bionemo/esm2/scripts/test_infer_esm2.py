@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import glob
+from typing import get_args
 
 import pandas as pd
 import pytest
@@ -26,6 +28,8 @@ from bionemo.esm2.data.tokenizer import get_tokenizer
 from bionemo.esm2.model.finetune.datamodule import ESM2FineTuneDataModule, InMemoryCSVDataset
 from bionemo.esm2.scripts.infer_esm2 import infer_model
 from bionemo.llm.data import collate
+from bionemo.llm.lightning import batch_collator
+from bionemo.llm.utils.callbacks import IntervalT
 
 
 esm2_650m_checkpoint_path = load("esm2/650m:2.0")
@@ -126,7 +130,10 @@ def test_esm2_fine_tune_data_module_val_dataloader(data_module):
 
 
 @pytest.mark.parametrize("precision", ["fp32", "bf16-mixed"])
-def test_infer_runs(tmpdir, dummy_protein_csv, dummy_protein_sequences, precision, padded_tokenized_sequences):
+@pytest.mark.parametrize("prediction_interval", get_args(IntervalT))
+def test_infer_runs(
+    tmpdir, dummy_protein_csv, dummy_protein_sequences, precision, padded_tokenized_sequences, prediction_interval
+):
     data_path = dummy_protein_csv
     result_dir = tmpdir / "results"
     min_seq_len = 1024  # Minimum length of the output batch; tensors will be padded to this length.
@@ -136,6 +143,7 @@ def test_infer_runs(tmpdir, dummy_protein_csv, dummy_protein_sequences, precisio
         checkpoint_path=esm2_650m_checkpoint_path,
         results_path=result_dir,
         min_seq_length=min_seq_len,
+        prediction_interval=prediction_interval,
         include_hiddens=True,
         precision=precision,
         include_embeddings=True,
@@ -146,7 +154,12 @@ def test_infer_runs(tmpdir, dummy_protein_csv, dummy_protein_sequences, precisio
     )
     assert result_dir.exists(), "Could not find test results directory."
 
-    results = torch.load(f"{result_dir}/predictions__rank_0.pt")
+    if prediction_interval == "epoch":
+        results = torch.load(f"{result_dir}/predictions__rank_0.pt")
+    elif prediction_interval == "batch":
+        results = batch_collator(
+            [torch.load(f, map_location="cpu") for f in glob.glob(f"{result_dir}/predictions__rank_0__batch_*.pt")]
+        )
     assert isinstance(results, dict)
     keys_included = ["token_logits", "hidden_states", "embeddings", "binary_logits", "input_ids"]
     assert all(key in results for key in keys_included)
@@ -161,4 +174,8 @@ def test_infer_runs(tmpdir, dummy_protein_csv, dummy_protein_sequences, precisio
     assert results["token_logits"].shape[:-1] == (min_seq_len, len(dummy_protein_sequences))
 
     # test 1:1 mapping between input sequence and results
-    assert torch.equal(padded_tokenized_sequences, results["input_ids"])
+    # this does not apply to "batch" prediction_interval mode since the order of batches may not be consistent
+    # due distributed processing. To address this, we optionally include input_ids in the predictions, allowing
+    # for accurate mapping post-inference.
+    if prediction_interval == "epoch":
+        assert torch.equal(padded_tokenized_sequences, results["input_ids"])
