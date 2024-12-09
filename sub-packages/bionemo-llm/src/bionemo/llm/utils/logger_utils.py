@@ -101,5 +101,6 @@ def setup_nemo_lightning_logger(
     # Needed so that the trainer can find an output directory for the profiler
     logger.save_dir = save_dir
     # TODO(dorotat-nv) Hot fix - remove this linewhen issue <LINK> is fixed on wandb side
-    logger.wandb._wandb_init["dir"] = str(logger.wandb._wandb_init["dir"])
+    if wandb_config is not None:
+        logger.wandb._wandb_init["dir"] = str(logger.wandb._wandb_init["dir"])
     return logger
