@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import logging
 import pathlib
 
@@ -106,6 +107,7 @@ def test_nemo_logger_initilized(tmp_path, wandb_config, project_name, caplog):
         ckpt_callback=None,
     )
 
+    # as in https://github.com/NVIDIA/NeMo/blob/bb895bc4b28ba99d707cb907c4496297a2a7b533/nemo/collections/llm/api.py#L852C22-L856C6
     logger.setup(trainer=trainer)
 
     # Check that directories are set up correctly
@@ -118,7 +120,9 @@ def test_nemo_logger_initilized(tmp_path, wandb_config, project_name, caplog):
     assert not tb_log_dir.is_dir(), "TensorBoard log directory should not exist yet."
 
     # Trigger lazy creation of experiment in loggers so loggers have their metadata available
-    # following trainer setup in
+    # following trainer setup at the start of the training in
+    # https://github.com/Lightning-AI/pytorch-lightning/blob/de7c28ae865b5c9fd3ff21debebb994605f7f420/src/lightning/pytorch/trainer/trainer.py#L944
+    # which executes
     # https://github.com/Lightning-AI/pytorch-lightning/blob/caa9e1e59436913e365bf52eeb2b07e3bf67efac/src/lightning/pytorch/trainer/call.py#L94C1-L97C34
     for _logger in trainer.loggers:
         if hasattr(_logger, "experiment"):
