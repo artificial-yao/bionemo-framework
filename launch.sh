@@ -107,7 +107,7 @@ EOF
 }
 
 # Defaults for `.env` file
-export BIONEMO_IMAGE=${BIONEMO_IMAGE:=nvcr.io/nvidian/cvai_bnmo_trng/bionemo:dev}
+export BIONEMO_IMAGE=${BIONEMO_IMAGE:=nvcr.io/nvidia/clara/bionemo-framework:1.10.1}
 export LOCAL_REPO_PATH=$(pwd)
 export DOCKER_REPO_PATH=${DOCKER_REPO_PATH:=/workspace/bionemo}
 export LOCAL_RESULTS_PATH=${LOCAL_RESULTS_PATH:=${LOCAL_REPO_PATH}/results}
