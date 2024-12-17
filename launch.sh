@@ -14,7 +14,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+export NGC_CLI_API_KEY=$(cat ~/API_KEY)
 current_script="$0"
 
 # Check if the script is executable
@@ -116,6 +116,8 @@ export LOCAL_DATA_PATH=${LOCAL_DATA_PATH:=${LOCAL_REPO_PATH}/data}
 export DOCKER_DATA_PATH=${DOCKER_DATA_PATH:=${DOCKER_REPO_PATH}/data}
 export LOCAL_MODELS_PATH=${LOCAL_MODELS_PATH:=${LOCAL_REPO_PATH}/models}
 export DOCKER_MODELS_PATH=${DOCKER_MODELS_PATH:=${DOCKER_REPO_PATH}/models}
+export LOCAL_VIRTUAL_SCREENING_PATH=${LOCAL_VIRTUAL_SCREENING_PATH:=/home/substrate/projects/generative-virtual-screening}
+export DOCKER_VIRTUAL_SCREENING_PATH=${DOCKER_VIRTUAL_SCREENING_PATH:=${DOCKER_REPO_PATH}/generative-virtual-screening}
 export WANDB_API_KEY=${WANDB_API_KEY:=NotSpecified}
 export JUPYTER_PORT=${JUPYTER_PORT:=8888}
 export REGISTRY=${REGISTRY:=nvcr.io}
@@ -159,6 +161,8 @@ if [ $write_env -eq 1 ]; then
     echo DOCKER_DATA_PATH=${DOCKER_DATA_PATH} >> $LOCAL_ENV
     echo LOCAL_MODELS_PATH=${LOCAL_MODELS_PATH} >> $LOCAL_ENV
     echo DOCKER_MODELS_PATH=${DOCKER_MODELS_PATH} >> $LOCAL_ENV
+    echo LOCAL_VIRTUAL_SCREENING_PATH=${LOCAL_VIRTUAL_SCREENING_PATH} >> $LOCAL_ENV
+    echo DOCKER_VIRTUAL_SCREENING_PATH=${DOCKER_VIRTUAL_SCREENING_PATH} >> $LOCAL_ENV
     echo WANDB_API_KEY=${WANDB_API_KEY} >> $LOCAL_ENV
     echo JUPYTER_PORT=${JUPYTER_PORT} >> $LOCAL_ENV
     echo REGISTRY=${REGISTRY} >> $LOCAL_ENV
@@ -181,12 +185,14 @@ if [ -f /.dockerenv ]; then
     RESULT_PATH=${DOCKER_RESULTS_PATH}
     DATA_PATH=${DOCKER_DATA_PATH}
     MODEL_PATH=${DOCKER_MODELS_PATH}
+    VIRTUAL_SCREENING_PATH=${DOCKER_VIRTUAL_SCREENING_PATH}
     BIONEMO_HOME=${DOCKER_REPO_PATH}
 else
     echo "Not running inside a Docker container, using LOCAL paths from .env file."
     RESULT_PATH=${LOCAL_RESULTS_PATH}
     DATA_PATH=${LOCAL_DATA_PATH}
     MODEL_PATH=${LOCAL_MODELS_PATH}
+    VIRTUAL_SCREENING_PATH=${LOCAL_VIRTUAL_SCREENING_PATH}
     BIONEMO_HOME=${LOCAL_REPO_PATH}
 fi
 
@@ -213,6 +219,8 @@ DOCKER_CMD="docker run \
     --network host \
     ${PARAM_RUNTIME} \
     -p ${JUPYTER_PORT}:8888 \
+    -p 8082:8082 \
+    -p 8083:8083 \
     --shm-size=4g \
     --ulimit memlock=-1 \
     --ulimit stack=67108864 \
@@ -546,6 +554,7 @@ setup() {
     DOCKER_CMD="${DOCKER_CMD} -v ${LOCAL_RESULTS_PATH}:${DOCKER_RESULTS_PATH}"
     DOCKER_CMD="${DOCKER_CMD} -v ${LOCAL_DATA_PATH}:${DOCKER_DATA_PATH}"
     DOCKER_CMD="${DOCKER_CMD} -v ${LOCAL_MODELS_PATH}:${DOCKER_MODELS_PATH}"
+    DOCKER_CMD="${DOCKER_CMD} -v ${LOCAL_VIRTUAL_SCREENING_PATH}:${DOCKER_VIRTUAL_SCREENING_PATH}"
     DOCKER_CMD="${DOCKER_CMD} -v /etc/passwd:/etc/passwd:ro "
     DOCKER_CMD="${DOCKER_CMD} -v /etc/group:/etc/group:ro "
     DOCKER_CMD="${DOCKER_CMD} -v /etc/shadow:/etc/shadow:ro "
