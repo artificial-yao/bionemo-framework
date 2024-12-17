@@ -1,6 +1,8 @@
 data:
   processed: False # If processed=True, load inference data from processed_inference_data_path. Otherwise, will process the data from raw_inference_data_dir (refer to /bionemo/data/dsmbind/preprocess.py for the required structure of the raw data directory).
-  raw_inference_data_dir: ${oc.env:BIONEMO_HOME}/examples/tests/test_data/molecule/dsmbind/inference # directory to raw inference data
+  #raw_inference_data_dir: ${oc.env:BIONEMO_HOME}/examples/tests/test_data/molecule/dsmbind/inference # directory to raw inference data
+  raw_inference_data_dir: ${oc.env:BIONEMO_HOME}/generative-virtual-screening/data/dsmbind_inputs # directory to raw inference data
+  predictions_csv: ${oc.env:BIONEMO_HOME}/generative-virtual-screening/data/dsmbind_predictions.csv
   processed_inference_data_path: ${oc.env:BIONEMO_HOME}/examples/tests/test_data/molecule/dsmbind/inference/processed.pkl # path to processed inference data
 
 model:

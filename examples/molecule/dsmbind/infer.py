@@ -37,6 +37,7 @@ from bionemo.data.dsmbind.dataset import DSMBindDataset
 from bionemo.data.dsmbind.preprocess import preprocess
 from bionemo.model.molecule.dsmbind.dsmbind_model import DSMBind
 
+import pandas as pd
 
 def inference(model, dataloader, device):
     model.eval()
@@ -104,6 +105,8 @@ def main(cfg) -> None:
     predictions = inference(model, test_loader, devices[0])
     logging.info(f"Predictions: {predictions}")  # Only the rank of the predictions matters
 
+    df = pd.DataFrame({'DSMBind_predictions': predictions})
+    df.to_csv(cfg.data.predictions_csv, index=False) # see infer.yaml
 
 if __name__ == "__main__":
     main()
