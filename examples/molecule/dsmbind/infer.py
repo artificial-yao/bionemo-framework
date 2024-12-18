@@ -24,6 +24,8 @@ Typical usage example:
 Notes:
     See conf/infer.yaml for hyperparameters and settings for this script.
 """
+import warnings
+warnings.filterwarnings('ignore')
 
 import os
 
